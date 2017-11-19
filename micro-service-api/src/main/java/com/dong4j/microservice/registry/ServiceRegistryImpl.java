@@ -32,6 +32,10 @@ public class ServiceRegistryImpl implements ServiceRegistry, Watcher {
     public ServiceRegistryImpl() {
     }
 
+    /**
+     * Instantiates a new Service registry.
+     * @param zkServers the zk servers zk 的服务地址
+     */
     public ServiceRegistryImpl(String zkServers) {
         try {
             zk = new ZooKeeper(zkServers, SESSION_TIMEOUT, this);
