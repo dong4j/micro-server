@@ -44,7 +44,7 @@ app.all('*', function (req, res) {
     console.log('servicePath: %s', servicePath);
 
     // 缓存 serviceAddress
-    if (serviceAddress !== '') {
+    if (cache[serviceName] !== undefined) {
         console.log('return serviceAddress from cache');
         serviceAddress = cache[serviceName];
 
@@ -79,32 +79,44 @@ app.all('*', function (req, res) {
             }
             console.log('addressPath: %s', addressPath);
 
-            // 获取服务地址
-            zk.getData(addressPath, function (error, address) {
-                if (error) {
-                    console.log(error.stack);
-                    res.end();
-                    return;
+            zk.exists(addressPath, function (event) {
+                console.log('event type: %s', event.getType());
+                if (event.getType() === zookeeper.Event.NODE_DELETED) {
+                    console.log('%s node delete, clear cache', addressPath);
+                    cache = [];
+                } else if (event.getType() === zookeeper.Event.NODE_DATA_CHANGED) {
+                    console.log('%s node data change, set cache', addressPath);
+                    cache = [];
                 }
-                console.log('serviceAddress: %s', address);
-                if (!address) {
-                    console.log('service address  is not exist');
-                    res.end();
+            }, function (error, stat) {
+                if (stat) {
+                    // 获取服务地址
+                    zk.getData(addressPath, function (error, address) {
+                        if (error) {
+                            console.log(error.stack);
+                            res.end();
+                            return;
+                        }
+                        console.log('serviceAddress: %s', address);
+                        if (!address) {
+                            console.log('service address  is not exist');
+                            res.end();
+                        }
+
+                        console.log('save serviceAddress to cache, serviceAddress: %s', address);
+                        cache[serviceName] = address;
+                        serviceAddress = address;
+
+                        // 执行反向代理
+                        console.log('execute proxy, target: %s', serviceAddress);
+                        proxy.web(req, res, {
+                            target: 'http://' + serviceAddress
+                        });
+                    });
                 }
-
-                console.log('save serviceAddress to cache, serviceAddress: %s', address);
-                cache[serviceName] = address;
-                serviceAddress = address;
-
-                // 执行反向代理
-                console.log('execute proxy, target: %s', serviceAddress);
-                proxy.web(req, res, {
-                    target: 'http://' + serviceAddress
-                });
             });
         });
     }
-
 
 });
 
