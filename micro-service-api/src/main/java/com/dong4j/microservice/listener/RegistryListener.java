@@ -45,6 +45,7 @@ public class RegistryListener implements ServletContextListener {
         RequestMappingHandlerMapping mappingHandlerMapping = applicationContext.getBean(RequestMappingHandlerMapping
             .class);
         Map<RequestMappingInfo, HandlerMethod> infoMap = mappingHandlerMapping.getHandlerMethods();
+        // 遍历被 @RequestMapping 修饰的所用方法, 如果此注解的 name 属性不为空, 则使用 name 注册服务
         for (RequestMappingInfo info : infoMap.keySet()) {
             String serviceName = info.getName();
             if (serviceName != null) {

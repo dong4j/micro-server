@@ -27,7 +27,7 @@ public class ServiceRegistryImpl implements ServiceRegistry, Watcher {
     private static CountDownLatch latch = new CountDownLatch(1);
     private ZooKeeper zk;
     private static final int SESSION_TIMEOUT = 5000;
-    private static final String REGISTRY_PATH = "registry";
+    private static final String REGISTRY_PATH = "/registry";
 
     public ServiceRegistryImpl() {
     }

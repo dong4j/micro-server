@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="console"></div>
+
+<script src="js/jquery.min.js"></script>
+
+<script>
+    $(function () {
+        $.ajax({
+                   method: "GET",
+                   url: "/hello",
+                   headers: {
+                       "Service-Name": "HelloService"
+                   },
+                   success: function (data) {
+                       $('#console').text(data);
+                   }
+               });
+    });
+</script>
+</body>
+</html>
