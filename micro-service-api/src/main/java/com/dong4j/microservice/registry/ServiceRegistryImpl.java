@@ -58,17 +58,17 @@ public class ServiceRegistryImpl implements ServiceRegistry, Watcher {
      */
     @Override
     public void registry(String serviceName, String serviceAddress) {
-        try{
+        try {
             // 创建根节点(持久型)
             String registryPath = REGISTRY_PATH;
-            if(zk.exists(registryPath, false) == null){
+            if (zk.exists(registryPath, false) == null) {
                 zk.create(registryPath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 log.debug("create registry node: {}", registryPath);
             }
 
             // 创建服务节点(持久型)
             String servicePath = registryPath + "/" + serviceName;
-            if(zk.exists(servicePath, false) == null){
+            if (zk.exists(servicePath, false) == null) {
                 zk.create(servicePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
                 log.debug("create service node: {}", servicePath);
 
