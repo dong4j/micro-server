@@ -6,6 +6,9 @@ var REGISTRY_ROOT = '/registry';
 var CONNECTION_STRING = '127.0.0.1:2181';
 var PORT = 1234;
 
+var cache = [];
+var serviceAddress = '';
+
 // 连接 zookeeper
 var zk = zookeeper.createClient(CONNECTION_STRING);
 zk.connect();
@@ -40,50 +43,69 @@ app.all('*', function (req, res) {
     var servicePath = REGISTRY_ROOT + '/' + serviceName;
     console.log('servicePath: %s', servicePath);
 
-    // 获取服务路径下的节点
-    zk.getChildren(servicePath, function (error, addressNodes) {
-        if (error) {
-            console.log(error.stack);
-            res.end();
-            return;
-        }
+    // 缓存 serviceAddress
+    if (serviceAddress !== '') {
+        console.log('return serviceAddress from cache');
+        serviceAddress = cache[serviceName];
 
-        var size = addressNodes.length;
-        if (size === 0) {
-            console.log('address node is not exist');
-            res.end();
-            return;
-        }
-
-        // 生成地址路径
-        var addressPath = servicePath + '/';
-        if (size === 1) {
-            addressPath += addressNodes[0];
-        } else {
-            // 若存在多个地址,随机选取一个
-            addressPath += addressNodes[parseInt(Math.random() * size)];
-        }
-        console.log('addressPath: %s', addressPath);
-
-        // 获取服务地址
-        zk.getData(addressPath, function (error, serviceAddress) {
+        // 执行反向代理
+        console.log('execute proxy, target: %s', serviceAddress);
+        proxy.web(req, res, {
+            target: 'http://' + serviceAddress
+        });
+    } else {
+        // 获取服务路径下的节点
+        zk.getChildren(servicePath, function (error, addressNodes) {
             if (error) {
                 console.log(error.stack);
                 res.end();
                 return;
             }
-            console.log('serviceAddress: %s', serviceAddress);
-            if (!serviceAddress) {
-                console.log('service address  is not exist');
+
+            var size = addressNodes.length;
+            if (size === 0) {
+                console.log('address node is not exist');
                 res.end();
+                return;
             }
 
-            // 执行反向代理
-            proxy.web(req, res, {
-                target: 'http://' + serviceAddress
+            // 生成地址路径
+            var addressPath = servicePath + '/';
+            if (size === 1) {
+                addressPath += addressNodes[0];
+            } else {
+                // 若存在多个地址,随机选取一个
+                addressPath += addressNodes[parseInt(Math.random() * size)];
+            }
+            console.log('addressPath: %s', addressPath);
+
+            // 获取服务地址
+            zk.getData(addressPath, function (error, address) {
+                if (error) {
+                    console.log(error.stack);
+                    res.end();
+                    return;
+                }
+                console.log('serviceAddress: %s', address);
+                if (!address) {
+                    console.log('service address  is not exist');
+                    res.end();
+                }
+
+                console.log('save serviceAddress to cache, serviceAddress: %s', address);
+                cache[serviceName] = address;
+                serviceAddress = address;
+
+                // 执行反向代理
+                console.log('execute proxy, target: %s', serviceAddress);
+                proxy.web(req, res, {
+                    target: 'http://' + serviceAddress
+                });
             });
         });
-    })
+    }
+
+
 });
 
 app.listen(PORT, function () {
