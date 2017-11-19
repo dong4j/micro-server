@@ -13,6 +13,7 @@
 
 	<modules>
 		<module>micro-service-api</module>
+		<module>micro-service-framework</module>
 	</modules>
 
 	<parent>
